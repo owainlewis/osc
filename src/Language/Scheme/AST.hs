@@ -1,7 +1,12 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
-module Language.Scheme.AST where
+module Language.Scheme.AST
+    ( Scheme(..)
+    , Eval(..)
+    , EnvCtx
+    , SchemeException(..)
+    ) where
 
 import qualified Data.Text            as T
 import           Data.Typeable        (Typeable)
