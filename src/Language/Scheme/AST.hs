@@ -8,21 +8,18 @@ module Language.Scheme.AST
     , SchemeException(..)
     ) where
 
+
 import qualified Data.Text            as T
-import           Data.Typeable        (Typeable)
 
 import           Control.Exception
 import           Control.Monad.Reader
 import qualified Data.Map             as Map
+import           Data.Typeable        (Typeable)
 
 type EnvCtx = Map.Map T.Text Scheme
 
 newtype Eval a = Eval { unEval :: ReaderT EnvCtx IO a }
-  deriving (Monad,
-            Functor,
-            Applicative,
-            MonadReader EnvCtx,
-            MonadIO)
+  deriving (Monad, Functor, Applicative, MonadReader EnvCtx, MonadIO)
 
 data Scheme
   = Atom T.Text
