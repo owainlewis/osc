@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE OverloadedStrings         #-}
 module Language.Scheme.Parser
     ( readExpr
     ) where
@@ -41,16 +43,25 @@ parseIdentifier = T.pack <$> (Tok.identifier lexer <|> specialIdentifier) <?> "i
     specialIdentifier :: Parser String
     specialIdentifier = lexeme $ try $ string "-" <|> string "+" <|> string "..."
 
+parseQuoted :: Parser a -> Parser a
+parseQuoted p = try (char '\'') *> p
+
 parseNil :: Parser ()
 parseNil = try ((char '\'') *> string "()") *> return () <?> "nil"
 
 parseInteger :: Parser Integer
 parseInteger = Tok.decimal lexer
 
+parseBoolean :: Parser Scheme
+parseBoolean = char '#'
+    *> (char 't' *> return (Bool True)
+    <|> char 'f' *> return (Bool False))
+
 scheme :: Parser Scheme
-scheme = Nil <$ parseNil
+scheme = parseBoolean <|> Nil <$ parseNil
      <|> Atom <$> parseIdentifier
      <|> Number <$> parseInteger
+     <|> (\v -> List [Atom "quote", v]) <$> parseQuoted scheme
      <|> List <$> parens schemeList
 
 schemeList :: Parser [Scheme]
