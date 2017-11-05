@@ -8,7 +8,6 @@ module Language.Scheme.Internal.AST
     , SchemeException(..)
     ) where
 
-
 import qualified Data.Text            as T
 
 import           Control.Exception
