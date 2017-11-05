@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Language.Scheme.Eval where
+module Language.Scheme.Internal.Eval where
 
-import           Language.Scheme.AST
+import           Language.Scheme.Internal.AST
 
 import           Control.Exception
 import           Control.Monad.Reader
-import qualified Data.Text            as T
+import qualified Data.Text                    as T
 
-import qualified Data.Map             as Map
+import qualified Data.Map                     as Map
 
 eval :: Scheme -> Eval Scheme
 eval (Number i)                 = return (Number i)

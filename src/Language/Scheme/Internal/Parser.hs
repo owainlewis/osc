@@ -1,18 +1,18 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings         #-}
-module Language.Scheme.Parser
+module Language.Scheme.Internal.Parser
     ( readExpr
     ) where
 
-import qualified Data.Text             as T
+import qualified Data.Text                    as T
 import           Text.Parsec
-import qualified Text.Parsec.Language  as Lang
+import qualified Text.Parsec.Language         as Lang
 import           Text.Parsec.Text
-import qualified Text.Parsec.Token     as Tok
+import qualified Text.Parsec.Token            as Tok
 
-import           Control.Monad         (mzero)
-import           Data.Functor.Identity (Identity)
-import           Language.Scheme.AST
+import           Control.Monad                (mzero)
+import           Data.Functor.Identity        (Identity)
+import           Language.Scheme.Internal.AST
 
 lexer :: Tok.GenTokenParser T.Text () Identity
 lexer = Tok.makeTokenParser style

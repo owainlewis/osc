@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
-module Language.Scheme.AST
+module Language.Scheme.Internal.AST
     ( Scheme(..)
     , Eval(..)
     , EnvCtx
