@@ -1,4 +1,6 @@
-module Language.Scheme.Parser where
+module Language.Scheme.Parser
+    ( readExpr
+    ) where
 
 import qualified Data.Text             as T
 import           Text.Parsec
@@ -15,7 +17,7 @@ lexer = Tok.makeTokenParser style
 
 style :: Tok.GenLanguageDef T.Text () Identity
 style = Lang.emptyDef {
-  Tok.commentStart = "{-"
+    Tok.commentStart = "{-"
   , Tok.commentEnd = "-}"
   , Tok.commentLine = ";"
   , Tok.opStart = mzero
@@ -45,6 +47,7 @@ parseNil = try ((char '\'') *> string "()") *> return () <?> "nil"
 parseInteger :: Parser Integer
 parseInteger = Tok.decimal lexer
 
+scheme :: Parser Scheme
 scheme = Nil <$ parseNil
      <|> Atom <$> parseIdentifier
      <|> Number <$> parseInteger
@@ -53,7 +56,8 @@ scheme = Nil <$ parseNil
 schemeList :: Parser [Scheme]
 schemeList = scheme `sepBy` whitespace
 
-contents p = whitespace *> lexeme p <* eof
-
 readExpr :: T.Text -> Either ParseError [Scheme]
 readExpr = parse (contents schemeList) "<stdin>"
+    where
+      contents :: Parser a -> Parser a
+      contents p = whitespace *> lexeme p <* eof
