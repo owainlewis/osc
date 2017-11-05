@@ -14,6 +14,7 @@ import qualified Data.Text            as T
 import           Control.Exception
 import           Control.Monad.Reader
 import qualified Data.Map             as Map
+import           Data.Semigroup       ((<>))
 import           Data.Typeable        (Typeable)
 
 type EnvCtx = Map.Map T.Text Scheme
@@ -49,9 +50,12 @@ showVal val =
     (Bool True)     -> "#t"
     (Bool False)    -> "#f"
     Nil             -> "'()"
-    (List contents) -> "[?]"
+    (List contents) -> "(" <> showVals contents <> ")"
     (Fun _ )        -> "(internal f)"
     (Lambda _ _)    -> "(lambda f)"
+
+showVals :: [Scheme] -> T.Text
+showVals = T.unwords . (map showVal)
 
 data SchemeException
   = UnboundVar T.Text

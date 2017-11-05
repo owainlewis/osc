@@ -33,19 +33,27 @@ whitespace = Tok.whiteSpace lexer
 lexeme :: Parser a -> Parser a
 lexeme = Tok.lexeme lexer
 
-identifier :: Parser T.Text
-identifier = T.pack <$> (Tok.identifier lexer <|> specialIdentifier) <?> "identifier"
+parseIdentifier :: Parser T.Text
+parseIdentifier = T.pack <$> (Tok.identifier lexer <|> specialIdentifier) <?> "identifier"
   where
     specialIdentifier :: Parser String
     specialIdentifier = lexeme $ try $ string "-" <|> string "+" <|> string "..."
 
-nil :: Parser ()
-nil = try ((char '\'') *> string "()") *> return () <?> "nil"
+parseNil :: Parser ()
+parseNil = try ((char '\'') *> string "()") *> return () <?> "nil"
 
-parser = Nil <$ nil
-       <|> Atom <$> identifier
+parseInteger :: Parser Integer
+parseInteger = Tok.decimal lexer
+
+scheme = Nil <$ parseNil
+     <|> Atom <$> parseIdentifier
+     <|> Number <$> parseInteger
+     <|> List <$> parens schemeList
+
+schemeList :: Parser [Scheme]
+schemeList = scheme `sepBy` whitespace
 
 contents p = whitespace *> lexeme p <* eof
 
-readExpr :: T.Text -> Either ParseError Scheme
-readExpr = parse (contents parser) "<stdin>"
+readExpr :: T.Text -> Either ParseError [Scheme]
+readExpr = parse (contents schemeList) "<stdin>"
