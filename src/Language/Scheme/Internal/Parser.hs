@@ -3,6 +3,7 @@
 module Language.Scheme.Internal.Parser
     ( readExpr
     , readExprs
+    , readSchemeFile
     ) where
 
 import qualified Data.Text                    as T
