@@ -6,6 +6,7 @@ module Language.Scheme.Internal.Parser
     ) where
 
 import qualified Data.Text                    as T
+import qualified Data.Text.IO                 as TIO
 import           Text.Parsec
 import qualified Text.Parsec.Language         as Lang
 import           Text.Parsec.Text
@@ -76,3 +77,7 @@ readExpr = parse (contents scheme) "<stdin>"
 
 readExprs :: T.Text -> Either ParseError [Scheme]
 readExprs = parse (contents schemeList) "<stdin>"
+
+-- | Read the contents as a file and either return the parsed AST or an error
+readSchemeFile :: FilePath -> IO (Either ParseError [Scheme])
+readSchemeFile f = readExprs <$> TIO.readFile f
