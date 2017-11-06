@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings         #-}
 module Language.Scheme.Internal.Parser
     ( readExpr
+    , readExprs
     ) where
 
 import qualified Data.Text                    as T
@@ -67,8 +68,11 @@ scheme = parseBoolean <|> Nil <$ parseNil
 schemeList :: Parser [Scheme]
 schemeList = scheme `sepBy` whitespace
 
-readExpr :: T.Text -> Either ParseError [Scheme]
-readExpr = parse (contents schemeList) "<stdin>"
-    where
-      contents :: Parser a -> Parser a
-      contents p = whitespace *> lexeme p <* eof
+contents :: Parser a -> Parser a
+contents p = whitespace *> lexeme p <* eof
+
+readExpr :: T.Text -> Either ParseError Scheme
+readExpr = parse (contents scheme) "<stdin>"
+
+readExprs :: T.Text -> Either ParseError [Scheme]
+readExprs = parse (contents schemeList) "<stdin>"
