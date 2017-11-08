@@ -4,6 +4,7 @@
 module Language.Scheme.Internal.AST
     ( Scheme(..)
     , Eval(..)
+    , IFunc(..)
     , EnvCtx
     , SchemeException(..)
     ) where
@@ -18,18 +19,23 @@ import           Data.Typeable        (Typeable)
 
 type EnvCtx = Map.Map T.Text Scheme
 
-newtype Eval a = Eval { unEval :: ReaderT EnvCtx IO a }
-  deriving (Monad, Functor, Applicative, MonadReader EnvCtx, MonadIO)
+newtype Eval a =
+    Eval { unEval :: ReaderT EnvCtx IO a }
+    deriving (Monad,
+              Functor,
+              Applicative,
+              MonadReader EnvCtx,
+              MonadIO)
 
 data Scheme
   = Atom T.Text
   | List [Scheme]
   | Number Integer
   | String T.Text
-  | Fun IFunc
-  | Lambda IFunc EnvCtx
   | Nil
   | Bool Bool
+  | Fun IFunc
+  | Lambda IFunc EnvCtx
   deriving (Typeable, Eq)
 
 data IFunc = IFunc { fn :: [Scheme] -> Eval Scheme }
@@ -38,7 +44,7 @@ instance Eq IFunc where
     (==) _ _ = False
 
 instance Show Scheme where
-    show = T.unpack . showVal
+    show = T.unpack . showAST
 
 showVal :: Scheme -> T.Text
 showVal val =
@@ -49,15 +55,37 @@ showVal val =
     (Bool True)     -> "#t"
     (Bool False)    -> "#f"
     Nil             -> "'()"
-    (List contents) -> "(" <> showVals contents <> ")"
+    (List contents) -> "(" <> showVals showVal contents <> ")"
     (Fun _ )        -> "(internal f)"
     (Lambda _ _)    -> "(lambda f)"
 
-showVals :: [Scheme] -> T.Text
-showVals = T.unwords . (map showVal)
+wrapAST :: T.Text -> Scheme -> T.Text
+wrapAST x v = T.concat [x, "[", showVal v, "]"]
+
+showAST :: Scheme -> T.Text
+showAST val =
+  case val of
+    x@(Atom atom)     -> wrapAST "Atom" x
+    x@(String txt)    -> wrapAST "String" x
+    x@(Number num)    -> wrapAST "Number" x
+    x@(Bool True)     -> wrapAST "Bool" x
+    x@(Bool False)    -> wrapAST "Bool" x
+    x@(Nil)           -> wrapAST "Nil" x
+    x@(List contents) ->
+      let inner = showVals showAST contents in
+      "List[" <> inner <> "]"
+
+    x@(Fun _ )        -> "(internal f)"
+    x@(Lambda _ _)    -> "(lambda f)"
+
+showVals :: (a -> T.Text) -> [a] -> T.Text
+showVals f = T.unwords . (map f)
 
 data SchemeException
   = UnboundVar T.Text
+  | ArityException Int Int
+  | TypeException T.Text
+  | GenericException T.Text
   deriving (Typeable)
 
 instance Exception SchemeException
@@ -69,3 +97,7 @@ showError :: SchemeException -> T.Text
 showError err =
   case err of
     (UnboundVar e) -> T.concat ["Unbound variable: ", e]
+    (TypeException e) -> T.concat ["Type error: ", e]
+    (ArityException x y) ->
+        T.concat ["Invalid arity: expected ", T.pack . show $ y]
+    (GenericException e) -> T.concat ["Exception: ", e]

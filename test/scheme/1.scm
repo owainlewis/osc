@@ -1,4 +1,2 @@
-(+ 1 2 3)
-
-(define (double x)
-  (* x 2))
+(if #t
+    1 2)

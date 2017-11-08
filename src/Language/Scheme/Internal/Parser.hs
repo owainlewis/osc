@@ -3,11 +3,10 @@
 module Language.Scheme.Internal.Parser
     ( readExpr
     , readExprs
-    , readSchemeFile
+    , readExprsFromFile
     ) where
 
 import qualified Data.Text                    as T
-import qualified Data.Text.IO                 as TIO
 import           Text.Parsec
 import qualified Text.Parsec.Language         as Lang
 import           Text.Parsec.Text
@@ -52,8 +51,14 @@ parseQuoted p = try (char '\'') *> p
 parseNil :: Parser ()
 parseNil = try ((char '\'') *> string "()") *> return () <?> "nil"
 
+sign :: Parser (Integer -> Integer)
+sign = char '-' *> return negate
+   <|> char '+' *> return id
+   <|> return id
+
 parseInteger :: Parser Integer
-parseInteger = Tok.decimal lexer
+parseInteger = sign <*> decimal
+  where decimal = Tok.decimal lexer
 
 parseBoolean :: Parser Scheme
 parseBoolean = char '#'
@@ -79,6 +84,7 @@ readExpr = parse (contents scheme) "<stdin>"
 readExprs :: T.Text -> Either ParseError [Scheme]
 readExprs = parse (contents schemeList) "<stdin>"
 
--- | Read the contents as a file and either return the parsed AST or an error
-readSchemeFile :: FilePath -> IO (Either ParseError [Scheme])
-readSchemeFile f = readExprs <$> TIO.readFile f
+-- | Given the contents of a file, read the contents into
+--   a single scheme list of exprs
+readExprsFromFile :: T.Text -> Either ParseError Scheme
+readExprsFromFile = parse (contents $ List <$> schemeList) "<fio>"

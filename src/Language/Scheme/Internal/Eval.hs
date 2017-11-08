@@ -1,5 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Language.Scheme.Internal.Eval where
+module Language.Scheme.Internal.Eval
+    ( eval
+    , runScheme
+    , runSchemeWithDefaultEnv
+    ) where
 
 import           Language.Scheme.Internal.AST
 
@@ -18,6 +22,13 @@ eval Nil                        = return Nil
 eval (Atom a)                   = getEnv a
 eval (List [Atom "quote", val]) = return val
 
+eval (List [Atom "if", predicate, t, f]) = do
+   result <- eval predicate
+   case result of
+     (Bool True) -> eval t
+     (Bool False) -> eval f
+     _ -> throw $ GenericException "Expected boolean clause in if"
+
 getEnv :: T.Text -> Eval Scheme
 getEnv atom = do
   env <- ask
@@ -31,5 +42,9 @@ setEnv name expr = do
     evalVal <- eval expr
     local (const $ Map.insert name  evalVal env) (pure name)
 
-go :: Eval a -> EnvCtx -> IO a
-go expr env = runReaderT (unEval expr) env
+--------------------------------------------------------
+runScheme :: Eval a -> EnvCtx -> IO a
+runScheme expr env = runReaderT (unEval expr) env
+
+runSchemeWithDefaultEnv :: Eval a -> IO a
+runSchemeWithDefaultEnv = flip runScheme Map.empty
