@@ -83,7 +83,8 @@ showVals f = T.unwords . (map f)
 
 data SchemeException
   = UnboundVar T.Text
-  | ArityException Int Int
+  | ArityException Int Int -- (Actual, Expected)
+  | ArgumentException T.Text
   | TypeException T.Text
   | GenericException T.Text
   deriving (Typeable)
@@ -98,6 +99,7 @@ showError err =
   case err of
     (UnboundVar e) -> T.concat ["Unbound variable: ", e]
     (TypeException e) -> T.concat ["Type error: ", e]
+    (ArgumentException e) -> T.concat ["Argument error: ", e]
     (ArityException x y) ->
         T.concat ["Invalid arity: expected ", T.pack . show $ y]
     (GenericException e) -> T.concat ["Exception: ", e]
