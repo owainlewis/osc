@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 module Language.Scheme.Internal.Core
-  ( defaultEnv
-  ) where
+  ( defaultEnv ) where
 
 import Language.Scheme.Internal.AST
 
