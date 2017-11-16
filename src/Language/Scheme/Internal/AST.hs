@@ -30,6 +30,7 @@ newtype Eval a =
 data Scheme
   = Atom T.Text
   | List [Scheme]
+  -- TODO add support for floating point etc
   | Number Integer
   | String T.Text
   | Nil
@@ -101,5 +102,5 @@ showError err =
     (TypeException e) -> T.concat ["Type error: ", e]
     (ArgumentException e) -> T.concat ["Argument error: ", e]
     (ArityException x y) ->
-        T.concat ["Invalid arity: expected ", T.pack . show $ y]
+        T.concat ["Invalid arity: ", T.pack . show $ y]
     (GenericException e) -> T.concat ["Exception: ", e]

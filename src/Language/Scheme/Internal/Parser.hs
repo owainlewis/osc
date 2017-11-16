@@ -39,38 +39,50 @@ whitespace = Tok.whiteSpace lexer
 lexeme :: Parser a -> Parser a
 lexeme = Tok.lexeme lexer
 
-parseIdentifier :: Parser T.Text
-parseIdentifier = T.pack <$> (Tok.identifier lexer <|> specialIdentifier) <?> "identifier"
+parseIdentifier :: Parser Scheme
+parseIdentifier = Atom <$> p
   where
+    p = T.pack <$> (Tok.identifier lexer <|> specialIdentifier) <?> "identifier"
     specialIdentifier :: Parser String
-    specialIdentifier = lexeme $ try $ string "-" <|> string "+" <|> string "..."
+    specialIdentifier =
+        lexeme $ try $ string "-" <|> string "+" <|> string "..."
 
-parseQuoted :: Parser a -> Parser a
-parseQuoted p = try (char '\'') *> p
-
-parseNil :: Parser ()
-parseNil = try ((char '\'') *> string "()") *> return () <?> "nil"
+parseQuotedList :: Parser Scheme
+parseQuotedList =
+  (\v -> List [Atom "quote", v]) <$> (try (char '\'') *> scheme)
 
 sign :: Parser (Integer -> Integer)
 sign = char '-' *> return negate
    <|> char '+' *> return id
    <|> return id
 
-parseInteger :: Parser Integer
-parseInteger = sign <*> decimal
-  where decimal = Tok.decimal lexer
+parseNumber :: Parser Scheme
+parseNumber = Number <$> (sign <*> Tok.decimal lexer)
+
+parseNil :: Parser Scheme
+parseNil = Nil <$ p
+    where p = try ((char '\'') *> string "()") *> return () <?> "nil"
 
 parseBoolean :: Parser Scheme
 parseBoolean = char '#'
     *> (char 't' *> return (Bool True)
     <|> char 'f' *> return (Bool False))
 
+parseString :: Parser Scheme
+parseString = String <$> p
+    where p = T.pack <$> Tok.stringLiteral lexer
+
+parseList = List <$> parens schemeList
+
 scheme :: Parser Scheme
-scheme = parseBoolean <|> Nil <$ parseNil
-     <|> Atom <$> parseIdentifier
-     <|> Number <$> parseInteger
-     <|> (\v -> List [Atom "quote", v]) <$> parseQuoted scheme
-     <|> List <$> parens schemeList
+scheme = parseBoolean
+     <|> parseNil
+     -- We need to try here because of parsing (+1) and (+ 1)
+     <|> try parseNumber
+     <|> parseIdentifier
+     <|> parseString
+     <|> parseQuotedList
+     <|> parseList
 
 schemeList :: Parser [Scheme]
 schemeList = scheme `sepBy` whitespace

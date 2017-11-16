@@ -4,6 +4,7 @@ module Language.Scheme.Internal.Eval
     , runScheme
     , runSchemeWithDefaultEnv
     , evalSchemeText
+    , doExpr
     ) where
 
 import           Language.Scheme.Internal.AST
@@ -43,8 +44,10 @@ eval (List (x:xs)) = do
   case sf of
     (Fun (IFunc f)) -> f args
     _               -> throw $ GenericException "Not a function"
-
 eval _ = throw $ GenericException "Unbound eval form"
+
+--------------------------------------------------------
+
 getVar :: T.Text -> Eval Scheme
 getVar atom = do
   env <- ask
@@ -59,22 +62,17 @@ setEnv name expr = do
     local (const $ Map.insert name  evalVal env) (pure name)
 
 --------------------------------------------------------
-runScheme :: Eval a -> EnvCtx -> IO a
-runScheme expr env = runReaderT (unEval expr) env
-
-runSchemeWithDefaultEnv :: Eval a -> IO a
-runSchemeWithDefaultEnv = flip runScheme defaultEnv
 
 evalSchemeText :: T.Text -> Eval Scheme
 evalSchemeText input = either f g $ P.readExpr input
     where f = throw . GenericException . T.pack . show
           g = eval
 
--- Used only for testing
---
--- @
---     doLine "(+ 1 2 3)"
--- @
-evalScheme :: String -> IO Scheme
-evalScheme line =
-    runSchemeWithDefaultEnv $ (evalSchemeText . T.pack) line
+runScheme :: Eval a -> EnvCtx -> IO a
+runScheme expr env = runReaderT (unEval expr) env
+
+runSchemeWithDefaultEnv :: Eval a -> IO a
+runSchemeWithDefaultEnv = flip runScheme defaultEnv
+
+doExpr :: EnvCtx -> T.Text -> IO Scheme
+doExpr env expr = runScheme (evalSchemeText expr) env
