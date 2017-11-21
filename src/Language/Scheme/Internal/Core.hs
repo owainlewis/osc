@@ -79,15 +79,16 @@ binopFold op seed args = case args of
 
 -------------------------------------------------------------
 
-numOp op (Number x) (Number y) = return $ Number $ op x  y
-numOp op Nil        (Number y) = return $ Number y
-numOp op (Number x) Nil        = return $ Number x
-numOp op x           y         = throw $ TypeException "must be numeric"
+numOp op (Number x) (Number y) = return $ Number $ op x y
+numOp op x           y         = throw $ TypeException "expecting two numeric arguments"
+
+stringOp op (String x) (String y) = return $ Number $ op x y
+stringOp op x           y         = throw $ TypeException "expecting two string arguments"
 
 eq :: Scheme -> Scheme -> Eval Scheme
 eq (Atom   x) (Atom   y) = return . Bool $ x == y
 eq (Number x) (Number y) = return . Bool $ x == y
 eq (String x) (String y) = return . Bool $ x == y
 eq (Bool   x) (Bool   y) = return . Bool $ x == y
-eq Nil        Nil       = return $ Bool True
+eq (Nil)      (Nil)      = return $ Bool True
 eq  _          _         = return $ Bool False
