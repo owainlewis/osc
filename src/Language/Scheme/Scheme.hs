@@ -6,16 +6,14 @@ module Language.Scheme.Scheme
   )
   where
 
-
-
 import           Language.Scheme.Internal.AST
 import           Language.Scheme.Internal.Core
 import           Language.Scheme.Internal.Eval
 import           Language.Scheme.Internal.Parser
 
-import qualified Data.Bifunctor as BF
+import qualified Data.Bifunctor                  as BF
 
-import qualified Data.Text as T
+import qualified Data.Text                       as T
 import qualified Data.Text.IO                    as TIO
 
 -- | Useful for debugging the AST returned by parser

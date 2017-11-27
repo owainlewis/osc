@@ -7,15 +7,14 @@ module Language.Scheme.Internal.Eval
     , doExpr
     ) where
 
-import           Language.Scheme.Internal.AST
-import           Language.Scheme.Internal.Core   (defaultEnv)
-
 import           Control.Exception
 import           Control.Monad.Reader
 import qualified Data.Map                        as Map
+import           Data.Semigroup                  ((<>))
 import qualified Data.Text                       as T
+import           Language.Scheme.Internal.AST
+import           Language.Scheme.Internal.Core   (defaultEnv)
 import qualified Language.Scheme.Internal.Parser as P
-import Data.Semigroup((<>))
 
 -- Tracer function for debugging
 debugEval :: Eval Scheme

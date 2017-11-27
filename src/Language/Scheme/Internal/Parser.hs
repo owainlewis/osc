@@ -6,15 +6,14 @@ module Language.Scheme.Internal.Parser
     , readExprsFromFile
     ) where
 
+import           Control.Monad                (mzero)
+import           Data.Functor.Identity        (Identity)
 import qualified Data.Text                    as T
+import           Language.Scheme.Internal.AST
 import           Text.Parsec
 import qualified Text.Parsec.Language         as Lang
 import           Text.Parsec.Text
 import qualified Text.Parsec.Token            as Tok
-
-import           Control.Monad                (mzero)
-import           Data.Functor.Identity        (Identity)
-import           Language.Scheme.Internal.AST
 
 lexer :: Tok.GenTokenParser T.Text () Identity
 lexer = Tok.makeTokenParser style

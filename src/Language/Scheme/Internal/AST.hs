@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
+
 module Language.Scheme.Internal.AST
     ( Scheme(..)
     , Eval(..)
