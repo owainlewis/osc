@@ -7,8 +7,8 @@ import           Test.Hspec
 
 import qualified Data.Text                       as T
 
-main :: IO ()
-main = do
+parseTests :: Spec
+parseTests = do
     hspec $ describe "Parsing" $ do
         it "should parse an Atom" $
             readExpr "foo+?" `shouldBe` (Right $ Atom "foo+?")
@@ -22,3 +22,6 @@ main = do
             readExpr "'()" `shouldBe` (Right $ Nil)
         it "should parse a homogeneous list" $
             readExpr "(1 2 3)" `shouldBe` (Right $ List [Number 1, Number 2, Number 3])
+
+main :: IO ()
+main = parseTests

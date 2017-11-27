@@ -24,16 +24,18 @@ debugEval = do
   liftIO . print $ env
   return Nil
 
-pairMap :: (a -> a) -> (a -> a) -> [a] -> [(a,a)]
-pairMap _ _ [] = []
-pairMap f g (x:y:xs) = (f x, g y) : pairMap f g xs
-pairMap f g (x:xs) = pairMap f g xs
-
+-- Unwind a set of let forms in a tuple list. This
+-- is unsafe and will throw if the forms are not
+-- the expected types etc
 unwindLetForms :: [Scheme] -> Eval [(T.Text, Scheme)]
 unwindLetForms [] = return []
 unwindLetForms ((Atom x):y:xs) = do
   y' <- eval y
-  return [(x, y')]
+  rest <- unwindLetForms xs
+  return $ (x, y') : rest
+unwindLetForms (x:xs) =
+  throw $ TypeException msg
+  where msg = "Expecting let binding first form to be atomic"
 
 eval :: Scheme -> Eval Scheme
 eval (Number i)                 = return (Number i)
@@ -57,8 +59,10 @@ eval (List [Atom "if", predicate, t, f]) = do
 
 eval (List [Atom "let", (List boundVars), expr]) = do
   env <- ask
-  local (const (Map.fromList [] <> env))
-  debugEval
+  forms <- unwindLetForms boundVars
+  if (length forms == 0)
+    then throw $ GenericException "Emtpy let binding"
+    else local (const $ Map.fromList forms <> env) (eval expr)
 
 eval (List (x:xs)) = do
   env    <- ask
@@ -79,14 +83,6 @@ getVar atom = do
   case Map.lookup atom env of
     Just x  -> return x
     Nothing -> throw $ UnboundVar atom
-
-setEnv :: T.Text -> Scheme -> Eval T.Text
-setEnv name expr = do
-    env     <- ask
-    evalVal <- eval expr
-    local (const $ Map.insert name evalVal env) (pure name)
-
---------------------------------------------------------
 
 evalSchemeText :: T.Text -> Eval Scheme
 evalSchemeText input = either f g $ P.readExpr input
