@@ -16,7 +16,6 @@ import           Language.Scheme.Internal.AST
 import           Language.Scheme.Internal.Core   (defaultEnv)
 import qualified Language.Scheme.Internal.Parser as P
 
--- Tracer function for debugging
 debugEval :: Eval Scheme
 debugEval = do
   env <- ask
@@ -74,8 +73,6 @@ eval (List (x:xs)) = do
     _               -> throw $ GenericException "Not a function"
 eval _ = throw $ GenericException "Unbound eval form"
 
---------------------------------------------------------
-
 getVar :: T.Text -> Eval Scheme
 getVar atom = do
   env <- ask
@@ -93,8 +90,6 @@ runScheme expr env = runReaderT (unEval expr) env
 
 runSchemeWithDefaultEnv :: Eval a -> IO a
 runSchemeWithDefaultEnv = flip runScheme defaultEnv
-
-----------------------------------------------------------
 
 doExpr :: EnvCtx -> T.Text -> IO Scheme
 doExpr env expr = runScheme (evalSchemeText expr) env
