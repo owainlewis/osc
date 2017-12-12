@@ -51,9 +51,15 @@ eval (List [Atom "if", predicate, t, f]) = do
      (Bool True)  -> eval t
      (Bool False) -> eval f
      _            -> throw $ GenericException "Expected boolean clause in if"
--- This state represents simple function application.
--- We first lookup the first argument (f xs) and then apply
--- the evaluated inner fn to the evaluated args
+
+-- (define k=v)
+eval (List [Atom "define", k, v]) = do
+  env     <- ask
+  case k of
+    (Atom x) -> do
+        v' <- eval v
+        local (const $ Map.insert x v env) (return v')
+    _ -> throw $ TypeException "Expecting atom"
 
 eval (List [Atom "let", (List boundVars), expr]) = do
   env <- ask
@@ -61,7 +67,9 @@ eval (List [Atom "let", (List boundVars), expr]) = do
   if (length forms == 0)
     then throw $ GenericException "Emtpy let binding"
     else local (const $ Map.fromList forms <> env) (eval expr)
-
+-- This state represents simple function application.
+-- We first lookup the first argument (f xs) and then apply
+-- the evaluated inner fn to the evaluated args
 eval (List (x:xs)) = do
   env    <- ask
   -- The scheme function to apply
@@ -80,10 +88,10 @@ getVar atom = do
     Just x  -> return x
     Nothing -> throw $ UnboundVar atom
 
-evalSchemeText :: T.Text -> Eval Scheme
-evalSchemeText input = either f g $ P.readExpr input
+evalSchemeText :: T.Text -> Eval [Scheme]
+evalSchemeText input = either f g $ P.readExprs input
     where f = throw . GenericException . T.pack . show
-          g = eval
+          g = map eval
 
 runScheme :: Eval a -> EnvCtx -> IO a
 runScheme expr env = runReaderT (unEval expr) env
@@ -91,7 +99,7 @@ runScheme expr env = runReaderT (unEval expr) env
 runSchemeWithDefaultEnv :: Eval a -> IO a
 runSchemeWithDefaultEnv = flip runScheme defaultEnv
 
-doExpr :: EnvCtx -> T.Text -> IO Scheme
+doExpr :: EnvCtx -> T.Text -> IO [Scheme]
 doExpr env expr = runScheme (evalSchemeText expr) env
 
 debug :: String -> IO Scheme

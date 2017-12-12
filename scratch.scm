@@ -1,1 +1,5 @@
-(define addr (+ 1 2))
+(define x 10)
+
+(define y 20)
+
+(+ x y)
