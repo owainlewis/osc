@@ -31,7 +31,5 @@ compileText = compileASTs . parseText
 compileTextAST :: T.Text -> IO AST.Scheme
 compileTextAST = compileAST <$> parseText
 
--------------------------------------------
-
 andThen :: Monad m => (t -> m a) -> (a -> m b) -> t -> m b
 andThen f g x = f x >>= g
