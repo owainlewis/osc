@@ -3,17 +3,16 @@ module Language.Scheme.Internal.Core
   ( defaultEnv ) where
 
 import Language.Scheme.Internal.AST
-
 import qualified Data.Map as Map
-
 import Control.Monad(foldM)
 import Control.Exception(throw)
 
 type Unary  = Scheme -> Eval Scheme
+
 type Binary = Scheme -> Scheme -> Eval Scheme
 
 liftF :: ([Scheme] -> Eval Scheme) -> Scheme
-liftF = Fun . IFunc
+liftF = Fun . Thunk
 
 defaultEnv :: EnvCtx
 defaultEnv = Map.fromList
@@ -72,10 +71,11 @@ quote [] = throw $ ArityException 0 1
 -------------------------------------------------------------
 
 binopFold :: Binary -> Scheme -> [Scheme] -> Eval Scheme
-binopFold op seed args = case args of
-                            [a,b]  -> op a b
-                            (a:as) -> foldM op seed args
-                            []-> throw $ ArityException 0 2
+binopFold op seed args =
+    case args of
+      [a,b]  -> op a b
+      (a:as) -> foldM op seed args
+      []-> throw $ ArityException 0 2
 
 -------------------------------------------------------------
 

@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
-
 module Language.Scheme.Internal.AST
     ( Scheme(..)
     , Eval(..)
-    , IFunc(..)
+    , Thunk(..)
     , EnvCtx
     , SchemeException(..)
+    , showVal
     ) where
 
 import qualified Data.Text            as T
@@ -36,13 +36,14 @@ data Scheme
   | String T.Text
   | Nil
   | Bool Bool
-  | Fun IFunc
-  | Lambda IFunc EnvCtx
+  | Fun Thunk -- An internally defined function (prim)
+  | Lambda Thunk EnvCtx
   deriving (Typeable, Eq)
 
-data IFunc = IFunc { fn :: [Scheme] -> Eval Scheme }
+data Thunk = Thunk { fn :: [Scheme] -> Eval Scheme }
+    deriving (Typeable)
 
-instance Eq IFunc where
+instance Eq Thunk where
     (==) _ _ = False
 
 instance Show Scheme where
@@ -56,9 +57,9 @@ showVal val =
     (Number num)    -> T.pack $ show num
     (Bool True)     -> "#t"
     (Bool False)    -> "#f"
-    Nil             -> "'()"
+    (Nil)           -> "'()"
     (List contents) -> "(" <> showVals showVal contents <> ")"
-    (Fun _ )        -> "(internal f)"
+    (Fun _ )        -> "Function"
     (Lambda _ _)    -> "(lambda f)"
 
 wrapAST :: T.Text -> Scheme -> T.Text
@@ -77,7 +78,7 @@ showAST val =
       let inner = showVals showAST contents in
       "List[" <> inner <> "]"
 
-    x@(Fun _ )        -> "(internal f)"
+    x@(Fun f)        -> "Function => " <> ""
     x@(Lambda _ _)    -> "(lambda f)"
 
 showVals :: (a -> T.Text) -> [a] -> T.Text

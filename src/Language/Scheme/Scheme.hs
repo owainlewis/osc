@@ -1,40 +1,37 @@
+{-# LANGUAGE OverloadedStrings         #-}
 module Language.Scheme.Scheme
-  ( executeFile
-  , executeFileAST
-  , executeString
-  , execute
-  )
-  where
+    ( compileFile
+    , compileText
+    )
+    where
 
-import           Language.Scheme.Internal.AST
-import           Language.Scheme.Internal.Core
-import           Language.Scheme.Internal.Eval
-import           Language.Scheme.Internal.Parser
+import qualified Data.Text as T
 
-import qualified Data.Bifunctor                  as BF
+import Control.Monad(mapM_)
 
-import qualified Data.Text                       as T
-import qualified Data.Text.IO                    as TIO
+import Language.Scheme.Internal.Parser (parseText, parseFile)
+import qualified Language.Scheme.Internal.Eval as Eval
+import qualified Language.Scheme.Internal.Core as Core
+import qualified Language.Scheme.Internal.AST as AST
 
--- | Useful for debugging the AST returned by parser
---
---   When executed, this will parse the contents of a text
---   file and dump the parsed AST
-executeFileAST :: FilePath -> IO (Either String Scheme)
-executeFileAST filePath =
-    fmap (BF.first show) result
-    where result =
-            readExprsFromFile <$> TIO.readFile filePath
+compileASTs :: AST.Scheme -> IO ()
+compileASTs (AST.List x) = mapM_ compileAST x
 
--- | Given a file path, read the contents and evaulate it
---
-executeFile :: FilePath -> IO Scheme
-executeFile filePath = do
-  contents <- TIO.readFile filePath
-  runSchemeWithDefaultEnv (evalSchemeText contents)
+compileAST :: AST.Scheme -> IO AST.Scheme
+compileAST ast = do
+    let exprs = Eval.eval ast
+    Eval.runScheme exprs Core.defaultEnv
 
-execute :: T.Text -> IO Scheme
-execute = doExpr defaultEnv
+compileFile :: FilePath -> IO ()
+compileFile = parseFile `andThen` compileASTs
 
-executeString :: String -> IO Scheme
-executeString = execute . T.pack
+compileText :: T.Text -> IO ()
+compileText = compileASTs . parseText
+
+compileTextAST :: T.Text -> IO AST.Scheme
+compileTextAST = compileAST <$> parseText
+
+-------------------------------------------
+
+andThen :: Monad m => (t -> m a) -> (a -> m b) -> t -> m b
+andThen f g x = f x >>= g

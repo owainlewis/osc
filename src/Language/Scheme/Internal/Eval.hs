@@ -2,9 +2,8 @@
 module Language.Scheme.Internal.Eval
     ( eval
     , runScheme
-    , runSchemeWithDefaultEnv
-    , evalSchemeText
-    , doExpr
+    , debugEval
+    , unwrapOuterForm
     ) where
 
 import           Control.Exception
@@ -16,11 +15,17 @@ import           Language.Scheme.Internal.AST
 import           Language.Scheme.Internal.Core   (defaultEnv)
 import qualified Language.Scheme.Internal.Parser as P
 
-debugEval :: Eval Scheme
-debugEval = do
-  env <- ask
-  liftIO . print $ env
-  return Nil
+import Text.Parsec.Error(ParseError)
+
+unwrapOuterForm :: Scheme -> Scheme
+unwrapOuterForm (List [List x]) = (List x)
+unwrapOuterForm x = x
+
+debugEval :: Scheme -> Eval Scheme
+debugEval x = do
+  liftIO . print $ "Eval: step..."
+  liftIO . print $ x
+  eval x
 
 -- Unwind a set of let forms in a tuple list. This
 -- is unsafe and will throw if the forms are not
@@ -43,6 +48,10 @@ eval (List [])                  = return Nil
 eval (Nil)                      = return Nil
 eval (Atom a)                   = getVar a
 -- Quoted values
+eval (List [Atom "print", val]) = do
+  res <- eval val
+  liftIO . print . show . showVal $ res
+  return Nil
 eval (List [Atom "quote", val]) = return val
 -- If statements
 eval (List [Atom "if", predicate, t, f]) = do
@@ -51,7 +60,6 @@ eval (List [Atom "if", predicate, t, f]) = do
      (Bool True)  -> eval t
      (Bool False) -> eval f
      _            -> throw $ GenericException "Expected boolean clause in if"
-
 -- (define k=v)
 eval (List [Atom "define", k, v]) = do
   env     <- ask
@@ -60,7 +68,12 @@ eval (List [Atom "define", k, v]) = do
         v' <- eval v
         local (const $ Map.insert x v env) (return v')
     _ -> throw $ TypeException "Expecting atom"
-
+-- (lambda (x) (+ x y))
+eval (List [Atom "lambda", List params, expr]) = do
+  boundLocalEnv <- ask
+  return expr
+--  return $ Lambda (Thunk
+-- (let (x 10 y 20) (+ x y))
 eval (List [Atom "let", (List boundVars), expr]) = do
   env <- ask
   forms <- unwindLetForms boundVars
@@ -68,17 +81,20 @@ eval (List [Atom "let", (List boundVars), expr]) = do
     then throw $ GenericException "Emtpy let binding"
     else local (const $ Map.fromList forms <> env) (eval expr)
 -- This state represents simple function application.
--- We first lookup the first argument (f xs) and then apply
+-- We lookup the first argument (f xs) and then apply
 -- the evaluated inner fn to the evaluated args
-eval (List (x:xs)) = do
-  env    <- ask
+eval v@(List [x]) = eval x
+eval v@(List (x:xs)) = do
+--  liftIO . print $ v
   -- The scheme function to apply
   sf     <- eval x
   -- The arguments to apply a function to
   args   <- mapM eval xs
   case sf of
-    (Fun (IFunc f)) -> f args
-    _               -> throw $ GenericException "Not a function"
+    (Fun (Thunk f)) -> f args
+    x -> do
+      throw $ GenericException $ "Not a function " <> (T.pack . show $ x)
+
 eval _ = throw $ GenericException "Unbound eval form"
 
 getVar :: T.Text -> Eval Scheme
@@ -88,19 +104,7 @@ getVar atom = do
     Just x  -> return x
     Nothing -> throw $ UnboundVar atom
 
-evalSchemeText :: T.Text -> Eval [Scheme]
-evalSchemeText input = either f g $ P.readExprs input
-    where f = throw . GenericException . T.pack . show
-          g = map eval
+-----------------------------------------------
 
 runScheme :: Eval a -> EnvCtx -> IO a
 runScheme expr env = runReaderT (unEval expr) env
-
-runSchemeWithDefaultEnv :: Eval a -> IO a
-runSchemeWithDefaultEnv = flip runScheme defaultEnv
-
-doExpr :: EnvCtx -> T.Text -> IO [Scheme]
-doExpr env expr = runScheme (evalSchemeText expr) env
-
-debug :: String -> IO Scheme
-debug = doExpr defaultEnv . T.pack

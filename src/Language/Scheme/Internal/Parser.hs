@@ -3,10 +3,14 @@
 module Language.Scheme.Internal.Parser
     ( readExpr
     , readExprs
-    , readExprsFromFile
+    , readExprOrThrow
+    , readExprsOrThrow
+    , parseFile
+    , parseText
     ) where
 
 import           Control.Monad                (mzero)
+import           Control.Exception(throw)
 import           Data.Functor.Identity        (Identity)
 import qualified Data.Text                    as T
 import           Language.Scheme.Internal.AST
@@ -14,6 +18,8 @@ import           Text.Parsec
 import qualified Text.Parsec.Language         as Lang
 import           Text.Parsec.Text
 import qualified Text.Parsec.Token            as Tok
+
+import qualified Data.Text.IO as TIO
 
 lexer :: Tok.GenTokenParser T.Text () Identity
 lexer = Tok.makeTokenParser style
@@ -76,7 +82,6 @@ parseList = List <$> parens schemeList
 scheme :: Parser Scheme
 scheme = parseBoolean
      <|> parseNil
-     -- We need to try here because of parsing (+1) and (+ 1)
      <|> try parseNumber
      <|> parseIdentifier
      <|> parseString
@@ -89,13 +94,47 @@ schemeList = scheme `sepBy` whitespace
 contents :: Parser a -> Parser a
 contents p = whitespace *> lexeme p <* eof
 
-readExpr :: T.Text -> Either ParseError Scheme
-readExpr = parse (contents scheme) "<stdin>"
+throwLeft :: Either ParseError a -> a
+throwLeft = either (throw . GenericException . T.pack . show) id
 
-readExprs :: T.Text -> Either ParseError [Scheme]
-readExprs = parse (contents schemeList) "<stdin>"
+-- | Read a single expression from text
+--
+-- This would typically be used when reading in a REPL context
+--
+-- @
+-- λ> readExpr "" (T.pack "(+ 1 2 3)")
+-- @
+--
+readExpr :: SourceName -> T.Text -> Either ParseError Scheme
+readExpr source = parse (contents scheme) source
 
--- | Given the contents of a file, read the contents into
---   a single scheme list of exprs
-readExprsFromFile :: T.Text -> Either ParseError Scheme
-readExprsFromFile = parse (contents $ List <$> schemeList) "<fio>"
+-- | Read multiple expressions.
+--
+-- Typically this would be used when reading from a file
+--
+-- @
+-- λ> readExprs "" (T.pack "(+ 1 2 3)")
+-- @
+readExprs :: SourceName -> T.Text -> Either ParseError Scheme
+readExprs = parse (contents $ List <$> schemeList)
+
+-- | Read a single expr but throw if we encounter a parse error
+--
+readExprOrThrow :: SourceName -> T.Text -> Scheme
+readExprOrThrow source = throwLeft . readExpr source
+
+-- | Read multiple expressions but throw if we encounter a
+--   parse error
+readExprsOrThrow :: SourceName -> T.Text -> Scheme
+readExprsOrThrow source = throwLeft . readExprs source
+
+-- | Parse file will parse a file from the filesystem into an
+--   AST. If the parser encounters an error it will throw early.
+--   Unwinding the either at this stage reduces complexity
+--   elsewhere.
+parseFile :: FilePath -> IO Scheme
+parseFile path =
+    (readExprsOrThrow "<IO>") <$> (TIO.readFile path)
+
+parseText :: T.Text -> Scheme
+parseText = readExprsOrThrow "<std>"

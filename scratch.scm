@@ -1,5 +1,6 @@
-(define x 10)
+(print "Hello, World!")
 
-(define y 20)
-
-(+ x y)
+(let (x 1)
+  (let (y 2)
+    (let (z 3)
+      (print (+ x y z)))))

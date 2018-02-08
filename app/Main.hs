@@ -2,13 +2,11 @@ module Main
   ( main
   ) where
 
-import qualified Language.Scheme.Scheme as Scm
+import qualified Language.Scheme.Scheme as S
 
 scratch :: FilePath
 scratch = "scratch.scm"
 
 main :: IO ()
-main = Scm.executeFile scratch >>= print
-
-debug :: IO ()
-debug = Scm.executeFileAST scratch >>= print
+main = do
+  S.compileFile scratch >>= print >> return ()
