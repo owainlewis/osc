@@ -15,11 +15,11 @@ import           Language.Scheme.Internal.AST
 import           Language.Scheme.Internal.Core   (defaultEnv)
 import qualified Language.Scheme.Internal.Parser as P
 
-import Text.Parsec.Error(ParseError)
+import           Text.Parsec.Error               (ParseError)
 
 unwrapOuterForm :: Scheme -> Scheme
 unwrapOuterForm (List [List x]) = (List x)
-unwrapOuterForm x = x
+unwrapOuterForm x               = x
 
 debugEval :: Scheme -> Eval Scheme
 debugEval x = do
@@ -103,8 +103,6 @@ getVar atom = do
   case Map.lookup atom env of
     Just x  -> return x
     Nothing -> throw $ UnboundVar atom
-
------------------------------------------------
 
 runScheme :: Eval a -> EnvCtx -> IO a
 runScheme expr env = runReaderT (unEval expr) env

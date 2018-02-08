@@ -9,8 +9,8 @@ module Language.Scheme.Internal.Parser
     , parseText
     ) where
 
+import           Control.Exception            (throw)
 import           Control.Monad                (mzero)
-import           Control.Exception(throw)
 import           Data.Functor.Identity        (Identity)
 import qualified Data.Text                    as T
 import           Language.Scheme.Internal.AST
@@ -19,7 +19,7 @@ import qualified Text.Parsec.Language         as Lang
 import           Text.Parsec.Text
 import qualified Text.Parsec.Token            as Tok
 
-import qualified Data.Text.IO as TIO
+import qualified Data.Text.IO                 as TIO
 
 lexer :: Tok.GenTokenParser T.Text () Identity
 lexer = Tok.makeTokenParser style

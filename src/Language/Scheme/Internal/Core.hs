@@ -4,6 +4,7 @@ module Language.Scheme.Internal.Core
 
 import Language.Scheme.Internal.AST
 import qualified Data.Map as Map
+
 import Control.Monad(foldM)
 import Control.Exception(throw)
 

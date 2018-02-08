@@ -1,18 +1,18 @@
-{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Language.Scheme.Scheme
     ( compileFile
     , compileText
     )
     where
 
-import qualified Data.Text as T
+import qualified Data.Text                       as T
 
-import Control.Monad(mapM_)
+import           Control.Monad                   (mapM_)
 
-import Language.Scheme.Internal.Parser (parseText, parseFile)
-import qualified Language.Scheme.Internal.Eval as Eval
-import qualified Language.Scheme.Internal.Core as Core
-import qualified Language.Scheme.Internal.AST as AST
+import qualified Language.Scheme.Internal.AST    as AST
+import qualified Language.Scheme.Internal.Core   as Core
+import qualified Language.Scheme.Internal.Eval   as Eval
+import           Language.Scheme.Internal.Parser (parseFile, parseText)
 
 compileASTs :: AST.Scheme -> IO ()
 compileASTs (AST.List x) = mapM_ compileAST x
